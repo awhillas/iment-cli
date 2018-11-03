@@ -1,22 +1,22 @@
-"""Tests for our main skele CLI module."""
+"""Tests for our main iment CLI module."""
 
 
 from subprocess import PIPE, Popen as popen
 from unittest import TestCase
 
-from skele import __version__ as VERSION
+from iment import __version__ as VERSION
 
 
 class TestHelp(TestCase):
     def test_returns_usage_information(self):
-        output = popen(['skele', '-h'], stdout=PIPE).communicate()[0]
+        output = popen(['iment', '-h'], stdout=PIPE).communicate()[0]
         self.assertTrue('Usage:' in output)
 
-        output = popen(['skele', '--help'], stdout=PIPE).communicate()[0]
+        output = popen(['iment', '--help'], stdout=PIPE).communicate()[0]
         self.assertTrue('Usage:' in output)
 
 
 class TestVersion(TestCase):
     def test_returns_version_information(self):
-        output = popen(['skele', '--version'], stdout=PIPE).communicate()[0]
+        output = popen(['iment', '--version'], stdout=PIPE).communicate()[0]
         self.assertEqual(output.strip(), VERSION)
