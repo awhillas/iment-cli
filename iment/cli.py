@@ -1,21 +1,17 @@
 """
-iment
+Control center for an imaginary video game.
+usage:
+    control [-hv] [-n NAME] <command> [<args>...]
 
-Usage:
-  iment hello
-  iment -h | --help
-  iment --version
+options:
+    -h, --help                  shows the help
+    -n NAME --name=NAME         sets player name [default: player]
+    -v, --version               shows the version
 
-Options:
-  -h --help                         Show this screen.
-  --version                         Show version.
-
-Examples:
-  iment hello
-
-Help:
-  For help using this tool, please open an issue on the Github repository:
-  https://github.com/rdegges/iment-cli
+The subcommands are:
+    create  Create a new library database
+    import  Import images into a library
+    gather  Move all the images into a single location
 """
 
 
@@ -33,7 +29,7 @@ def main():
 
     # Here we'll try to dynamically match the command the user is trying to run
     # with a pre-defined command class we've already created.
-    for (k, v) in options.items(): 
+    for (k, v) in options.items():
         if hasattr(iment.commands, k) and v:
             module = getattr(iment.commands, k)
             iment.commands = getmembers(module, isclass)
