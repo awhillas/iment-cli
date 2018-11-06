@@ -5,6 +5,10 @@ name = "pypi"
 
 [packages]
 docopt = "*"
+pyyaml = "*"
+sqlalchemy = "*"
+pyfiglet = "*"
+tabulate = "*"
 
 [dev-packages]
 pylint = "*"
