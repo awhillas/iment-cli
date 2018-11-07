@@ -11,8 +11,9 @@ options:
     -d, --dry-run   Dry run of command, just lists changes
 
 The subcommands are:
-    add     Add files to the library
-    create  Create a new library
+    add     Add files to the album
+    create  Create a new album
+    ls      List images in album
 """
 
 import commands
@@ -45,7 +46,7 @@ if __name__ == '__main__':
         raise DocoptExit()
 
     # Open config file
-    print(args)
+    # print(args)
     config = Config()  # TODO: Pass in optional config name if given
 
     # Create an instance of the command.

@@ -13,3 +13,7 @@ class BaseCommand(object):
 
     def run(self):
         raise NotImplementedError('You must implement the run() method yourself!')
+
+    def option_is_set(self, needles):
+        # TODO: find a better arg parser which can handle subcommands
+        return any(n in self.options for n in needles)

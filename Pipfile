@@ -9,6 +9,9 @@ pyyaml = "*"
 sqlalchemy = "*"
 pyfiglet = "*"
 tabulate = "*"
+pillow = "*"
+pybktree = "*"
+dhash = "*"
 
 [dev-packages]
 pylint = "*"

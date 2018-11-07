@@ -1,7 +1,7 @@
 import os
 import sys
 
-from sqlalchemy import Column, ForeignKey, Integer, String, create_engine
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, create_engine, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
@@ -20,7 +20,8 @@ class Location(Base):
     location_type = Column(String(10), nullable=False, default='local file')
     image_type  =Column(String(10), nullable=False)
     image_id = Column(Integer, ForeignKey('image.id'))
-    image = relationship(Image)
+    image = relationship(Image, backref='files')
+    added_on = Column(DateTime, default=func.now())
 
 
 def create_album(connection_uri:str):
