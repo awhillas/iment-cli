@@ -12,18 +12,20 @@ class Image(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
-    fingerprint = Column(String(32), nullable=False)
 
 class Location(Base):
     __tablename__ = 'location'
 
     filepath = Column(String(255), primary_key=True)
+    # Fingerprint here is just for reverse exact lookup, similarity is done using a BK Tree.
+    fingerprint = Column(String, nullable=False)  # A String coz SQLite can't handle BigInteger :(
     image_id = Column(Integer, ForeignKey('image.id'))
     image = relationship(Image, backref='files')
     location_type = Column(String(10), nullable=False, default='local')  # add s3, dropbox, flickr etc
-    format = Column(String(10), nullable=False)
+    file_format = Column(String(10), nullable=False)
     added_on = Column(DateTime, default=func.now())
-
+    width = Column(Integer)
+    height = Column(Integer)
 
 def create_album(connection_uri:str):
     # Create an engine that stores data in A *.db file.

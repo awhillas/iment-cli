@@ -23,6 +23,7 @@ class Ls(BaseCommand):
 
     def run(self):
         album = self.config.get_album()
-        query = album.query(Image, Location).all().join(Location)
-        rows = [[img.id, img.name] for img in query]
-        print(tabulate(rows, headers=['id', 'name']))
+        query = album.query(Location).all()
+        columns = [c.name for c in Location.__table__.columns]
+        rows = [list(map(lambda col: getattr(loc, str(col)), columns)) for loc in query]
+        print(tabulate(rows, headers=[c.replace('_', ' ') for c in columns]))

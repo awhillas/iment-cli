@@ -16,6 +16,7 @@ dhash = "*"
 [dev-packages]
 pylint = "*"
 ipython = "*"
+rope = "*"
 
 [requires]
 python_version = "3.6"

@@ -1,6 +1,8 @@
-from os.path import join, dirname, basename
+import pickle
+from os.path import basename, dirname, join, exists
 from pprint import pprint as pp
 
+import pybktree
 from yaml import dump, load
 
 from lib import path_check
@@ -15,11 +17,13 @@ except ImportError:
 DEFAULT_CONFIG = { 'albums': {} }
 
 class Config(object):
-    """ Manage the YML config file """
+    """ Manage the YML config file
+        TODO: Craete an Album class and move all the DB an BKTree stuff to it
+    """
     def __init__(self, filepath=None):
         self.path = path_check(filepath)
         if self.path:
-            print("Using config file: {}".format(self.path))
+            # print("Using config file: {}".format(self.path))
             with open(self.path) as f:
                 self.data = load(f.read(), Loader=Loader)
         else:
@@ -54,3 +58,23 @@ class Config(object):
         else:
             pp(self.data)
             raise Exception("Album '{}', is like, unknown to us at this time, man...".format(album))
+
+    def get_fingerprints(self, album:str='default'):
+        """ BK Tree should be stored with the database file, if not create one! """
+        if album in self.data['albums']:
+            path = join(dirname(self.data['albums'][album].split('///')[1]), '{}.bktree.pickle'.format(album))
+            if exists(path):
+                with open(path, 'rb') as fp:
+                    return pickle.load(fp)
+            else:
+                return pybktree.BKTree(pybktree.hamming_distance)
+        else:
+            print("Ummm, err, what album called {}?".format(album))
+
+    def save_fingerprints(self, bk_tree, album:str='default'):
+        if album in self.data['albums']:
+            path = join(dirname(self.data['albums'][album].split('///')[1]), '{}.bktree.pickle'.format(album))
+            with open(path, 'wb+') as fp:
+                pickle.dump(bk_tree, fp)
+        else:
+            print("Which album, {}?".format(album))
