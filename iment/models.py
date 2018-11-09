@@ -12,15 +12,16 @@ class Image(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
+    fingerprint = Column(String(32), nullable=False)
 
 class Location(Base):
     __tablename__ = 'location'
 
     filepath = Column(String(255), primary_key=True)
-    location_type = Column(String(10), nullable=False, default='local file')
-    image_type  =Column(String(10), nullable=False)
     image_id = Column(Integer, ForeignKey('image.id'))
     image = relationship(Image, backref='files')
+    location_type = Column(String(10), nullable=False, default='local')  # add s3, dropbox, flickr etc
+    format = Column(String(10), nullable=False)
     added_on = Column(DateTime, default=func.now())
 
 

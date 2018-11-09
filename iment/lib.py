@@ -1,10 +1,15 @@
-import sys
 import imghdr
+import pathlib  # Python 3.5+
+import sys
+from os.path import abspath, exists, expanduser
 
 
-def is_image(filepath):
-    return imghdr.what(filepath)
-
+def path_check(p, create=False):
+    """ Expand path to absolute and make sure it exists """
+    path = expanduser(p) if p.startswith('~') else abspath(p)
+    if create:
+        pathlib.Path(path).mkdir(parents=True, exist_ok=True)
+    return path if exists(path) else False
 
 def query_yes_no(question, default="yes"):
     """Ask a yes/no question via input() and return their answer.

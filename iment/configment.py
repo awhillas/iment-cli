@@ -1,9 +1,9 @@
-import pathlib
-from os.path import abspath, dirname, exists, expanduser  # Python 3.5+
+from os.path import join, dirname, basename
 from pprint import pprint as pp
 
 from yaml import dump, load
 
+from lib import path_check
 from models import open_album
 
 try:
@@ -16,18 +16,16 @@ DEFAULT_CONFIG = { 'albums': {} }
 
 class Config(object):
     """ Manage the YML config file """
-
-    def __init__(self, filename=None):
-        self.path = abspath(filename) if filename else expanduser('~/.config/iment/config.yml')
-        pathlib.Path(dirname(self.path)).mkdir(parents=True, exist_ok=True)
-        if exists(self.path):
+    def __init__(self, filepath=None):
+        self.path = path_check(filepath)
+        if self.path:
             print("Using config file: {}".format(self.path))
             with open(self.path) as f:
                 self.data = load(f.read(), Loader=Loader)
         else:
             self.data = DEFAULT_CONFIG
-        print(">>>> Config data loaded")
-        pp(self.data)
+            self.path = join(path_check(dirname(filepath), True), basename(filepath))
+            self.save()
 
     def get(self):
         return self.data
@@ -40,7 +38,6 @@ class Config(object):
 
     def update(self, obj:dict):
         """ Merge the given object with the current dict """
-        print('>>>> update');pp(self.data); pp(obj)
         self.data.update(obj)
         self.save()  # Should we do this every time...?
 

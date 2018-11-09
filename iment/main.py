@@ -3,12 +3,14 @@
 Control center for an imaginary video game.
 
 usage:
-    iment [-hvd] <command> [<args>...]
+    iment [-hvd] [-a <album>] [-c <config>] <command> [<args>...]
 
 options:
-    -h, --help      Show detailed help
-    -v, --version   Shows the version
-    -d, --dry-run   Dry run of command, just lists changes
+    -h, --help      Show detailed help.
+    -v, --version   Shows the version.
+    -d, --dry-run   Dry run of command, just lists changes,
+    -a <album>      Album reference, "default" is assumed if not given.
+    -c <config>     Alternative config file, defaults to "~/.config/iment/config.yml"
 
 The subcommands are:
     add     Add files to the album
@@ -36,6 +38,7 @@ if __name__ == '__main__':
         command_args = {}
 
     # After 'poping' '<command>' and '<args>', what is left in the args dictionary are the global arguments.
+    # print(args)
 
     # Retrieve the class from the 'commands' module.
     try:
@@ -46,8 +49,8 @@ if __name__ == '__main__':
         raise DocoptExit()
 
     # Open config file
-    # print(args)
-    config = Config()  # TODO: Pass in optional config name if given
+    config_file = args['-c'] if args['-c'] else '~/.config/iment/config.yml'
+    config = Config(config_file)
 
     # Create an instance of the command.
     command = command_class(config, command_args, args)
