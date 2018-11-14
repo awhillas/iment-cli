@@ -23,9 +23,10 @@ class Location(Base):
     image = relationship(Image, backref='files')
     location_type = Column(String(10), nullable=False, default='local')  # add s3, dropbox, flickr etc
     file_format = Column(String(10), nullable=False)
-    added_on = Column(DateTime, default=func.now())
     width = Column(Integer)
     height = Column(Integer)
+    created_on = Column(DateTime)
+    added_on = Column(DateTime, default=func.now())
 
 def create_album(connection_uri:str):
     # Create an engine that stores data in A *.db file.

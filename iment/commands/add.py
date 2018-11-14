@@ -1,10 +1,9 @@
-"""The hello command."""
-
 import imghdr
+from datetime import datetime
 from functools import reduce
 from json import dumps
 from os import remove, walk
-from os.path import basename, exists, isdir, join
+from os.path import basename, exists, getmtime, isdir, join
 from pprint import pprint as pp
 
 import dhash
@@ -13,7 +12,7 @@ from docopt import DocoptExit, docopt
 from PIL import Image as PilImage
 from tabulate import tabulate
 
-from lib import path_check, print_table, query_options
+from lib import get_exif, path_check, print_table, query_options, print_vertical_table
 from models import Image, Location
 
 from .base import BaseCommand
@@ -26,6 +25,22 @@ PIL_SUPPORTED_IMAGES = ['.bmp',
 
 # Hamming distance between two image fingerprints that considers them the same
 SIMILAR_BIT_DIFF = 1
+
+def get_creation_time(image, path):
+    meta = get_exif(image)
+    if 'DateTimeOriginal' in meta:
+        print('Using DateTimeOriginal', meta['DateTimeOriginal'])
+        return datetime.strptime(meta['DateTimeOriginal'], '%Y:%m:%d %H:%M:%S')
+    elif 'DateTimeDigitized' in meta:
+        print('Using DateTimeDigitized', meta['DateTimeDigitized'])
+        return datetime.strptime(meta['DateTimeDigitized'], '%Y:%m:%d %H:%M:%S')
+    elif 'DateTime' in meta:
+        print('Using DateTime', meta['DateTime'])
+        return datetime.strptime(meta['DateTime'], '%Y:%m:%d %H:%M:%S')
+    else:
+        print('Using file timestamp', datetime.fromtimestamp(getmtime(path)).strftime('%Y-%m-%d %H:%M:%S'))
+        return datetime.fromtimestamp(getmtime(path))
+
 
 class Add(BaseCommand):
     """
@@ -45,7 +60,6 @@ class Add(BaseCommand):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fingerprints = self.config.get_fingerprints(self.album)
-        print("fingerprints", sorted(self.fingerprints))
         self.db = self.config.get_album()
 
     def run(self):
@@ -74,7 +88,7 @@ class Add(BaseCommand):
                     for f in files:
                         path = join(root, f)
                         # Only "fully supported" PIL images accepted
-                        if any(f.endswith(ext) for ext in PIL_SUPPORTED_IMAGES):
+                        if any(f.lower().endswith(ext) for ext in PIL_SUPPORTED_IMAGES):
                             new_image_files.append(path)
                         # else:
                         #     print("Skipping: {}".format(f))
@@ -96,7 +110,7 @@ class Add(BaseCommand):
                 # print(path)
                 fingerprint = dhash.dhash_int(image)
                 width, height = image.size
-                # print("Fingerprint: ", fingerprint)
+                created_on = get_creation_time(image, path)
                 new_images.append({
                     'filepath': path,
                     'fingerprint': str(fingerprint),
@@ -106,6 +120,7 @@ class Add(BaseCommand):
                     'pil_image': image,
                     'width': width,
                     'height': height,
+                    'created_on': created_on
                 })
             else:
                 new_image_files.remove(path)
@@ -150,62 +165,85 @@ class Add(BaseCommand):
             so looks like we already know about it so skip it.
             TODO: Show details side by side and ask: add location, replace, delete, skip
         """
-        print('Same-Same')
-        print_table([vars(existing_location), new_image_details], [c.name for c in Location.__table__.columns])
+        # print_table([vars(existing_location), new_image_details], [c.name for c in Location.__table__.columns])
         # tabulate([vars(existing_location), new_image_details], [c.name for c in Location.__table__.columns])
+        print_vertical_table([vars(existing_location), new_image_details], [c.name for c in Location.__table__.columns])
         options = {
             's' : 'Skip',
-            'r' : 'Replace the existing record',
-            # 'd' : 'Delete the file',
+            'u' : 'Update',
+            'w' : 'Show',
+            'd' : 'Delete',
         }
-        answer = query_options("Already know about this image", options)
-        if answer == 'r':
-            self.replace_location(existing_location, new_image_details)
-        elif answer == 'd':
-            self.delete_file(new_image_details)
-        else:
-            print("Skipping...")
+        shown = True
+        while shown:
+            shown = False
+            answer = query_options("Already know about this image", options)
+            if answer == 'r':
+                self.replace_location(existing_location, new_image_details)
+            elif answer == 'd':
+                self.delete_location(existing_location, new_image_details)
+            elif answer == 'w':
+                new_image_details['pil_image'].show()
+                shown = True
+            else:
+                print("Skipping...")
 
     def same_paths_diff_hash(self, existing_location, new_image_details):
         """ Same paths different hashes """
         print('same_paths_diff_hash')
         options = {
             's' : 'Skip',
-            'r' : 'Replace the existing record :-/',
-            'd' : 'Delete the file',
+            'u' : 'Update',
+            'w' : 'Show',
+            'd' : 'Delete',
         }
-        answer = query_options("Already have an image at that location", options)
-        if answer == 'r':
-            self.replace_location(existing_location, new_image_details)
-        elif answer == 'd':
-            self.delete_file(new_image_details)
-        else:
-            print("Skipping...")
+        shown = True
+        while shown:
+            shown = False
+            answer = query_options("Already have an image at that location", options)
+            if answer == 'r':
+                self.replace_location(existing_location, new_image_details)
+            elif answer == 'd':
+                self.delete_location(existing_location, new_image_details)
+            elif answer == 'w':
+                new_image_details['pil_image'].show()
+                shown = True
+            else:
+                print("Skipping...")
 
     def diff_paths_same_hash(self, existing_location, new_image_details):
-        """ Different paths, same hashes """
+        """ Different paths, same hashes
+            TODO: confirm known similar hash exists
+        """
         print("diff_paths_same_hash")
         options = {
             's' : 'Skip',
-            'a' : 'Add the file to the existing image',
-            'r' : 'Replace the existing record',
-            'd' : 'Delete the file',
+            'u' : 'Update',
+            'w' : 'Show',
+            'd' : 'Delete',
         }
-        answer = query_options("Similar/Same image already in cataloge", options)
-        if answer == 'a':
-            self.new_location(existing_location.image, new_image_details)
-        elif answer == 'r':
-            self.replace_location(existing_location, new_image_details)
-        elif answer == 'd':
-            self.delete_file(new_image_details)
-        else:
-            print("Skipping...")
+        shown = True
+        while shown:
+            shown = False
+            answer = query_options("Similar/Same image already in cataloge", options)
+            if answer == 'a':
+                self.new_location(existing_location.image, new_image_details)
+            elif answer == 'r':
+                self.replace_location(existing_location, new_image_details)
+            elif answer == 'd':
+                self.delete_location(existing_location, new_image_details)
+            elif answer == 'w':
+                existing = PilImage.open(existing_location.filepath)
+                existing.show()
+                new_image_details['pil_image'].show()
+                shown = True
+            else:
+                print("Skipping...")
 
     def diff_diff(self, new_location_details:dict):
         """ Both paths and hashes are different or its completely new
             so its basically create a new image
         """
-        print("diff_diff")
         self.new_image(new_location_details)
 
     def replace_location(self, old, new_details):
@@ -235,6 +273,7 @@ class Add(BaseCommand):
         # Add fingerprint to BK Tree
         self.fingerprints.add(new_location_details['dhash'])
 
-    def delete_file(self, loc_details):
-        print('Deleteing file {}'.format(loc_details['filepath']))
-        remove(loc_details['filepath'])
+    def delete_location(self, loc, details):
+        print('Deleteing file {}'.format(details['filepath']))
+        remove(details['filepath'])
+

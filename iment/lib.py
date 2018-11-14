@@ -2,6 +2,7 @@ import imghdr
 import pathlib  # Python 3.5+
 import sys
 from os.path import abspath, exists, expanduser
+from pprint import pprint as pp
 
 
 def path_check(p, create=False):
@@ -71,24 +72,45 @@ def query_options(question:str, options:dict, default:str=None):
             sys.stdout.write("wha...?\n")
 
 def print_table(myDict:list, colList:list=None):
-    """ Pretty print a list of dictionaries (myDict) as a dynamically sized table.
+    """ Pretty print a list of dictionaries as a dynamically sized table.
         from: https://stackoverflow.com/a/40389411/196732
-
+        :param myDict: list of dictionaries
         :param colList: If column names aren't specified, they will show in random order.
-        :param sep: row separator. Ex: sep='\n' on Linux. Default: dummy to not split line.
     """
-    if not colList: colList = list(myDict[0].keys() if myDict else [])
+    if not colList:
+        colList = list(myDict[0].keys() if myDict else [])
     myList = [colList] # 1st row = header
     for item in myDict:
         myList.append([str(item[col] or '') if col in item else '-' for col in colList])
     colSize = [max(map(len,col)) for col in zip(*myList)]
     formatStr = ' | '.join(["{{:<{}}}".format(i) for i in colSize])
     myList.insert(1, ['-' * i for i in colSize]) # Seperating line
-    for item in myList: print(formatStr.format(*item))
+    for item in myList:
+        print(formatStr.format(*item))
 
-def print_h_table(data:list, columns:list):
-    """ Print items horizontally in a table
-        :param data: list of dicts
-        :param columns: list of colums to show, should be keys in data's dicts
+def print_vertical_table(data:list, rows:list):
+    """ Print items vertically in a table
+        :param data: list of dicts, eacho one becomes a column
+        :param rows: list of rows to show, should be keys in data's dicts
     """
-    pass
+    # Get the longest value in each dict
+    col_widths = [max(map(len, rows))]  # First column is headers
+    col_widths += [max([len(str(col[r])) for r in rows if r in col]) for col in data]
+    row_layout = ' | '.join(["{{:<{}}}".format(w) for w in col_widths])
+    # Rotate data from columns into rows
+    merged_data = [dict(zip(rows, rows))] + data  # add headers column
+    row_data = [ [str(col[r]) if r in col else '-' for col in merged_data] for r in rows]
+    # Print it!
+    print('-' * sum(col_widths))
+    for row in row_data:
+        print(row_layout.format(*row))
+    print('-' * sum(col_widths))
+
+def get_exif(i):
+    from PIL.ExifTags import TAGS
+    ret = {}
+    info = i._getexif()
+    for tag, value in info.items():
+        decoded = TAGS.get(tag, tag)
+        ret[decoded] = value
+    return ret
